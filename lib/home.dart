@@ -127,6 +127,7 @@ class _HomeViewState extends State<HomeView> {
   TimeOfDay _selectedTime = TimeOfDay.now();
   bool _isFlipped = false;
   String? _editingTxId;
+  String? _deletingAccountId;
 
   @override
   void initState() {
@@ -1016,7 +1017,16 @@ class _HomeViewState extends State<HomeView> {
           stream: _accountsStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting)
-              return const Center(child: CircularProgressIndicator());
+              return Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text('Loading account'),
+                  ],
+                ),
+              );
             final accounts = snapshot.data ?? [];
             if (_activeIdx >= accounts.length && accounts.isNotEmpty)
               _activeIdx = accounts.length - 1;
@@ -1083,35 +1093,44 @@ class _HomeViewState extends State<HomeView> {
                             itemCount: accounts.length,
                             itemBuilder: (context, index) {
                               final acc = accounts[index];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8.0,
-                                ),
-                                child: TweenAnimationBuilder(
+                              bool isDeleting = _deletingAccountId == acc.id;
+
+                              return AnimatedOpacity(
+                                duration: const Duration(milliseconds: 500),
+                                opacity: isDeleting ? 0.0 : 1.0,
+                                child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 500),
-                                  tween: Tween<double>(
-                                    begin: 0,
-                                    end: (_isFlipped && _activeIdx == index)
-                                        ? pi
-                                        : 0,
+                                  margin: EdgeInsets.only(
+                                    bottom: isDeleting ? 200 : 0,
+                                    left: 8.0,
+                                    right: 8.0,
                                   ),
-                                  builder: (context, double value, child) {
-                                    bool isBack = value >= pi / 2;
-                                    return Transform(
-                                      alignment: Alignment.center,
-                                      transform: Matrix4.identity()
-                                        ..setEntry(3, 2, 0.001)
-                                        ..rotateY(value),
-                                      child: isBack
-                                          ? Transform(
-                                              alignment: Alignment.center,
-                                              transform: Matrix4.identity()
-                                                ..rotateY(pi),
-                                              child: _buildSettingsCard(acc),
-                                            )
-                                          : _buildFrontCard(acc),
-                                    );
-                                  },
+                                  child: TweenAnimationBuilder(
+                                    duration: const Duration(milliseconds: 500),
+                                    tween: Tween<double>(
+                                      begin: 0,
+                                      end: (_isFlipped && _activeIdx == index)
+                                          ? pi
+                                          : 0,
+                                    ),
+                                    builder: (context, double value, child) {
+                                      bool isBack = value >= pi / 2;
+                                      return Transform(
+                                        alignment: Alignment.center,
+                                        transform: Matrix4.identity()
+                                          ..setEntry(3, 2, 0.001)
+                                          ..rotateY(value),
+                                        child: isBack
+                                            ? Transform(
+                                                alignment: Alignment.center,
+                                                transform: Matrix4.identity()
+                                                  ..rotateY(pi),
+                                                child: _buildSettingsCard(acc),
+                                              )
+                                            : _buildFrontCard(acc),
+                                      );
+                                    },
+                                  ),
                                 ),
                               );
                             },
@@ -1145,7 +1164,16 @@ class _HomeViewState extends State<HomeView> {
           if (!snapshot.hasData || snapshot.data!.isEmpty)
             return const SizedBox.shrink();
           return FloatingActionButton(
-            onPressed: () => _showEntrySheet(snapshot.data![_activeIdx]),
+            onPressed: () {
+              setState(() {
+                _editingTxId = null;
+                _amountController.clear();
+                _descController.clear();
+                _selectedDate = DateTime.now();
+                _selectedTime = TimeOfDay.now();
+              });
+              _showEntrySheet(snapshot.data![_activeIdx]);
+            },
             backgroundColor: Colors.white,
             child: const Icon(Icons.add, color: Colors.black),
           );
@@ -1166,6 +1194,17 @@ class _HomeViewState extends State<HomeView> {
           .orderBy('dateTime', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting)
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                CircularProgressIndicator(),
+                SizedBox(height: 12),
+                Text('Loading Transactions'),
+              ],
+            ),
+          );
         if (!snapshot.hasData) return const SizedBox.shrink();
         final txs = snapshot.data!.docs
             .map(
@@ -1349,13 +1388,35 @@ class _HomeViewState extends State<HomeView> {
                     shadows: textShadows,
                   ),
                 ),
-                Text(
-                  '${_f.format(acc.balance)} ${acc.currency}',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    shadows: textShadows,
-                  ),
+                StreamBuilder<DocumentSnapshot>(
+                  stream: _db
+                      .collection('users')
+                      .doc(acc.ownerId == '' ? _uid : acc.ownerId)
+                      .collection('accounts')
+                      .doc(acc.id)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      );
+                    }
+                    final data = snapshot.data?.data() as Map<String, dynamic>?;
+                    final balance = (data?['balance'] ?? 0.0).toDouble();
+                    return Text(
+                      '${_f.format(balance)} ${acc.currency}',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        shadows: textShadows,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -1468,28 +1529,133 @@ class _HomeViewState extends State<HomeView> {
             ),
           ),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  TextFormField(
-                    initialValue: acc.name,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      isDense: true,
-                    ),
-                    onChanged: (v) => acc.name = v,
-                    enabled: isOwner,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: acc.name,
+                          style: const TextStyle(fontSize: 13),
+                          decoration: const InputDecoration(
+                            labelText: 'Name',
+                            isDense: true,
+                          ),
+                          onChanged: (v) => acc.name = v,
+                          enabled: isOwner,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: acc.lastFour,
+                          style: const TextStyle(fontSize: 13),
+                          decoration: const InputDecoration(
+                            labelText: 'Last 4',
+                            isDense: true,
+                          ),
+                          onChanged: (v) => acc.lastFour = v,
+                          enabled: isOwner,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    initialValue: acc.lastFour,
-                    decoration: const InputDecoration(
-                      labelText: 'Last 4 Digits',
-                      isDense: true,
-                    ),
-                    onChanged: (v) => acc.lastFour = v,
-                    enabled: isOwner,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: acc.balance.toString(),
+                          style: const TextStyle(fontSize: 13),
+                          decoration: const InputDecoration(
+                            labelText: 'Initial Balance',
+                            isDense: true,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (v) =>
+                              acc.balance = double.tryParse(v) ?? 0.0,
+                          enabled: isOwner,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          value: acc.currency,
+                          style: const TextStyle(fontSize: 13),
+                          decoration: const InputDecoration(
+                            labelText: 'Currency',
+                            isDense: true,
+                          ),
+                          items: ['BHD', 'PKR', 'SAR']
+                              .map(
+                                (e) =>
+                                    DropdownMenuItem(value: e, child: Text(e)),
+                              )
+                              .toList(),
+                          onChanged: isOwner
+                              ? (v) => setState(() => acc.currency = v!)
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          initialValue: acc.conversionRate.toString(),
+                          style: const TextStyle(fontSize: 13),
+                          decoration: const InputDecoration(
+                            labelText: 'Rate to BHD',
+                            isDense: true,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (v) =>
+                              acc.conversionRate = double.tryParse(v) ?? 0.0,
+                          enabled: isOwner,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Color',
+                            style: TextStyle(fontSize: 11),
+                          ),
+                          trailing: CircleAvatar(
+                            backgroundColor: Color(acc.colorValue),
+                            radius: 12,
+                          ),
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: const Color(0xFF1E1E1E),
+                                title: const Text('Pick Color'),
+                                content: SingleChildScrollView(
+                                  child: ColorPicker(
+                                    pickerColor: Color(acc.colorValue),
+                                    onColorChanged: (color) => setState(
+                                      () => acc.colorValue = color.value,
+                                    ),
+                                    enableAlpha: false,
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('Done'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1517,6 +1683,16 @@ class _HomeViewState extends State<HomeView> {
                             ),
                             TextButton(
                               onPressed: () async {
+                                Navigator.pop(context);
+                                setState(() {
+                                  _isFlipped = false;
+                                  _deletingAccountId = acc.id;
+                                });
+
+                                await Future.delayed(
+                                  const Duration(milliseconds: 600),
+                                );
+
                                 String ownerId = acc.ownerId == ''
                                     ? _uid
                                     : acc.ownerId;
@@ -1526,11 +1702,11 @@ class _HomeViewState extends State<HomeView> {
                                     .collection('accounts')
                                     .doc(acc.id)
                                     .delete();
+
                                 setState(() {
+                                  _deletingAccountId = null;
                                   _activeIdx = 0;
-                                  _isFlipped = false;
                                 });
-                                Navigator.pop(context);
                               },
                               child: const Text(
                                 'Delete',
