@@ -255,14 +255,16 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
                   if (_auth.currentUser != null)
-                    IconButton(
-                      onPressed: _authenticateBiometrically,
-                      icon: const Icon(
-                        Icons.fingerprint,
-                        size: 48,
-                        color: Colors.white54,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: IconButton(
+                        onPressed: _authenticateBiometrically,
+                        icon: const Icon(
+                          Icons.fingerprint,
+                          size: 54,
+                          color: Colors.white54,
+                        ),
                       ),
                     ),
                 ],

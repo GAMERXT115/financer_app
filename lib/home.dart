@@ -117,6 +117,7 @@ class _HomeViewState extends State<HomeView> {
   final TextEditingController _accLastFourController = TextEditingController();
   final TextEditingController _accBalanceController = TextEditingController();
   final TextEditingController _userSearchController = TextEditingController();
+  final ScrollController _settingsScrollController = ScrollController();
   final NumberFormat _f = NumberFormat('#,##0.000', 'en_US');
 
   late PageController _pageController;
@@ -155,6 +156,7 @@ class _HomeViewState extends State<HomeView> {
     _accLastFourController.dispose();
     _accBalanceController.dispose();
     _userSearchController.dispose();
+    _settingsScrollController.dispose();
     super.dispose();
   }
 
@@ -1171,6 +1173,7 @@ class _HomeViewState extends State<HomeView> {
                 _descController.clear();
                 _selectedDate = DateTime.now();
                 _selectedTime = TimeOfDay.now();
+                _isExpense = true;
               });
               _showEntrySheet(snapshot.data![_activeIdx]);
             },
@@ -1529,135 +1532,148 @@ class _HomeViewState extends State<HomeView> {
             ),
           ),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          initialValue: acc.name,
-                          style: const TextStyle(fontSize: 13),
-                          decoration: const InputDecoration(
-                            labelText: 'Name',
-                            isDense: true,
+            child: Scrollbar(
+              thumbVisibility: true,
+              thickness: 4,
+              radius: const Radius.circular(10),
+              controller: _settingsScrollController,
+              child: SingleChildScrollView(
+                controller: _settingsScrollController,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: acc.name,
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              labelText: 'Name',
+                              isDense: true,
+                            ),
+                            onChanged: (v) => acc.name = v,
+                            enabled: isOwner,
                           ),
-                          onChanged: (v) => acc.name = v,
-                          enabled: isOwner,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          initialValue: acc.lastFour,
-                          style: const TextStyle(fontSize: 13),
-                          decoration: const InputDecoration(
-                            labelText: 'Last 4',
-                            isDense: true,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: acc.lastFour,
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              labelText: 'Last 4',
+                              isDense: true,
+                            ),
+                            onChanged: (v) => acc.lastFour = v,
+                            enabled: isOwner,
                           ),
-                          onChanged: (v) => acc.lastFour = v,
-                          enabled: isOwner,
                         ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          initialValue: acc.balance.toString(),
-                          style: const TextStyle(fontSize: 13),
-                          decoration: const InputDecoration(
-                            labelText: 'Initial Balance',
-                            isDense: true,
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: acc.balance.toString(),
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              labelText: 'Initial Balance',
+                              isDense: true,
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (v) =>
+                                acc.balance = double.tryParse(v) ?? 0.0,
+                            enabled: isOwner,
                           ),
-                          keyboardType: TextInputType.number,
-                          onChanged: (v) =>
-                              acc.balance = double.tryParse(v) ?? 0.0,
-                          enabled: isOwner,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: acc.currency,
-                          style: const TextStyle(fontSize: 13),
-                          decoration: const InputDecoration(
-                            labelText: 'Currency',
-                            isDense: true,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            value: acc.currency,
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              labelText: 'Currency',
+                              isDense: true,
+                            ),
+                            items: ['BHD', 'PKR', 'SAR']
+                                .map(
+                                  (e) => DropdownMenuItem(
+                                    value: e,
+                                    child: Text(e),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: isOwner
+                                ? (v) => setState(() => acc.currency = v!)
+                                : null,
                           ),
-                          items: ['BHD', 'PKR', 'SAR']
-                              .map(
-                                (e) =>
-                                    DropdownMenuItem(value: e, child: Text(e)),
-                              )
-                              .toList(),
-                          onChanged: isOwner
-                              ? (v) => setState(() => acc.currency = v!)
-                              : null,
                         ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          initialValue: acc.conversionRate.toString(),
-                          style: const TextStyle(fontSize: 13),
-                          decoration: const InputDecoration(
-                            labelText: 'Rate to BHD',
-                            isDense: true,
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            initialValue: acc.conversionRate.toString(),
+                            style: const TextStyle(fontSize: 13),
+                            decoration: const InputDecoration(
+                              labelText: 'Rate to BHD',
+                              isDense: true,
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (v) =>
+                                acc.conversionRate = double.tryParse(v) ?? 0.0,
+                            enabled: isOwner,
                           ),
-                          keyboardType: TextInputType.number,
-                          onChanged: (v) =>
-                              acc.conversionRate = double.tryParse(v) ?? 0.0,
-                          enabled: isOwner,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text(
-                            'Color',
-                            style: TextStyle(fontSize: 11),
-                          ),
-                          trailing: CircleAvatar(
-                            backgroundColor: Color(acc.colorValue),
-                            radius: 12,
-                          ),
-                          onTap: () {
-                            showDialog(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                backgroundColor: const Color(0xFF1E1E1E),
-                                title: const Text('Pick Color'),
-                                content: SingleChildScrollView(
-                                  child: ColorPicker(
-                                    pickerColor: Color(acc.colorValue),
-                                    onColorChanged: (color) => setState(
-                                      () => acc.colorValue = color.value,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text(
+                              'Color',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                            trailing: CircleAvatar(
+                              backgroundColor: Color(acc.colorValue),
+                              radius: 12,
+                            ),
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: const Color(0xFF1E1E1E),
+                                  title: const Text('Pick Color'),
+                                  content: SingleChildScrollView(
+                                    child: ColorPicker(
+                                      pickerColor: Color(acc.colorValue),
+                                      onColorChanged: (color) => setState(
+                                        () => acc.colorValue = color.value,
+                                      ),
+                                      enableAlpha: false,
                                     ),
-                                    enableAlpha: false,
                                   ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Done'),
+                                    ),
+                                  ],
                                 ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: const Text('Done'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
