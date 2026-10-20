@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1075854311849",
+    "project_id": "palm-finance-b9c42",
+    "storage_bucket": "palm-finance-b9c42.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1075854311849:android:f85e602afff8d226a2c4b8",
+        "android_client_info": {
+          "package_name": "com.example.financer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCjfvSzhDm5mrskGvzNaG_M2Jta1Vijmc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1075854311849:android:cdf65303d7afc42aa2c4b8",
+        "android_client_info": {
+          "package_name": "com.example.financer_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCjfvSzhDm5mrskGvzNaG_M2Jta1Vijmc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
