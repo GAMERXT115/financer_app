@@ -30,9 +30,11 @@ class _LoginViewState extends State<LoginView> {
   @override
   void initState() {
     super.initState();
-    if (_auth.currentUser != null) {
-      _authenticateBiometrically();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_auth.currentUser != null) {
+        _authenticateBiometrically();
+      }
+    });
   }
 
   Future<void> _authenticateBiometrically() async {
@@ -55,7 +57,7 @@ class _LoginViewState extends State<LoginView> {
         }
       }
     } catch (e) {
-      _showError(e.toString());
+      _showError('Biometric authentication failed');
     }
   }
 
@@ -155,8 +157,9 @@ class _LoginViewState extends State<LoginView> {
       backgroundColor: const Color(0xFF121212),
       body: Center(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Container(
-            width: 380,
+            constraints: const BoxConstraints(maxWidth: 400),
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: const Color(0xFF1E1E1E),
@@ -169,7 +172,7 @@ class _LoginViewState extends State<LoginView> {
                 Text(
                   _isLogin ? 'Login' : 'Sign Up',
                   style: const TextStyle(
-                    fontSize: 22,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -181,12 +184,9 @@ class _LoginViewState extends State<LoginView> {
                       Expanded(
                         child: TextField(
                           controller: _firstNameController,
-                          style: const TextStyle(fontSize: 13),
-                          textInputAction: TextInputAction.next,
+                          style: const TextStyle(color: Colors.white),
                           decoration: const InputDecoration(
                             labelText: 'First Name',
-                            isDense: true,
-                            prefixIcon: Icon(Icons.person_outline, size: 18),
                           ),
                         ),
                       ),
@@ -194,12 +194,9 @@ class _LoginViewState extends State<LoginView> {
                       Expanded(
                         child: TextField(
                           controller: _lastNameController,
-                          style: const TextStyle(fontSize: 13),
-                          textInputAction: TextInputAction.next,
+                          style: const TextStyle(color: Colors.white),
                           decoration: const InputDecoration(
                             labelText: 'Last Name',
-                            isDense: true,
-                            prefixIcon: Icon(Icons.person_outline, size: 18),
                           ),
                         ),
                       ),
@@ -208,41 +205,30 @@ class _LoginViewState extends State<LoginView> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: _usernameController,
-                    style: const TextStyle(fontSize: 13),
-                    textInputAction: TextInputAction.next,
+                    style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
                       labelText: 'Username',
-                      isDense: true,
-                      prefixIcon: Icon(Icons.alternate_email, size: 18),
+                      prefixText: '@',
                     ),
                   ),
                   const SizedBox(height: 12),
                 ],
                 TextField(
                   controller: _identifierController,
-                  style: const TextStyle(fontSize: 13),
-                  textInputAction: TextInputAction.next,
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     labelText: _isLogin ? 'Email or Username' : 'Email',
-                    isDense: true,
-                    prefixIcon: const Icon(Icons.email_outlined, size: 18),
+                    prefixIcon: const Icon(Icons.email_outlined, size: 20),
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _passwordController,
-                  style: const TextStyle(fontSize: 13),
-                  textInputAction: _isLogin
-                      ? TextInputAction.done
-                      : TextInputAction.next,
-                  onSubmitted: (_) {
-                    if (_isLogin) _submit();
-                  },
+                  style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(
                     labelText: 'Password',
-                    isDense: true,
-                    prefixIcon: Icon(Icons.lock_outline, size: 18),
+                    prefixIcon: Icon(Icons.lock_outline, size: 20),
                   ),
                   obscureText: true,
                 ),
@@ -250,13 +236,10 @@ class _LoginViewState extends State<LoginView> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: _confirmPasswordController,
-                    style: const TextStyle(fontSize: 13),
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _submit(),
+                    style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(
                       labelText: 'Confirm Password',
-                      isDense: true,
-                      prefixIcon: Icon(Icons.lock_reset, size: 18),
+                      prefixIcon: Icon(Icons.lock_reset, size: 20),
                     ),
                     obscureText: true,
                   ),
@@ -268,23 +251,25 @@ class _LoginViewState extends State<LoginView> {
                       onPressed: _forgotPassword,
                       child: const Text(
                         'Forgot Password?',
-                        style: TextStyle(fontSize: 11, color: Colors.white38),
+                        style: TextStyle(color: Colors.white38),
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: _authenticateBiometrically,
-                    icon: const Icon(
-                      Icons.fingerprint,
-                      size: 40,
-                      color: Colors.white54,
+                  const SizedBox(height: 10),
+                  if (_auth.currentUser != null)
+                    IconButton(
+                      onPressed: _authenticateBiometrically,
+                      icon: const Icon(
+                        Icons.fingerprint,
+                        size: 48,
+                        color: Colors.white54,
+                      ),
                     ),
-                  ),
                 ],
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
-                  height: 40,
+                  height: 48,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(
@@ -295,14 +280,7 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                     child: _isLoading
-                        ? const SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.black,
-                            ),
-                          )
+                        ? const CircularProgressIndicator(color: Colors.black)
                         : Text(
                             _isLogin ? 'Login' : 'Create Account',
                             style: const TextStyle(fontWeight: FontWeight.bold),
@@ -316,7 +294,7 @@ class _LoginViewState extends State<LoginView> {
                     _isLogin
                         ? "Don't have an account? Sign Up"
                         : "Already have an account? Login",
-                    style: const TextStyle(fontSize: 12, color: Colors.white54),
+                    style: const TextStyle(color: Colors.white54),
                   ),
                 ),
               ],
