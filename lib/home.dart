@@ -1486,7 +1486,7 @@ class _HomeViewState extends State<HomeView> {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.03),
               borderRadius: const BorderRadius.vertical(
@@ -1499,7 +1499,7 @@ class _HomeViewState extends State<HomeView> {
                 const Text(
                   'SETTINGS',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: FontWeight.w800,
                     color: Colors.white54,
                   ),
@@ -1511,20 +1511,22 @@ class _HomeViewState extends State<HomeView> {
                         onPressed: () => _manageSharing(acc),
                         icon: const Icon(
                           Icons.share,
-                          size: 16,
+                          size: 14,
                           color: Colors.white54,
                         ),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     IconButton(
                       onPressed: () => setState(() => _isFlipped = false),
                       icon: const Icon(
                         Icons.close,
-                        size: 18,
+                        size: 16,
                         color: Colors.white38,
                       ),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      constraints: const BoxConstraints(),
                     ),
                   ],
                 ),
@@ -1541,7 +1543,7 @@ class _HomeViewState extends State<HomeView> {
                 controller: _settingsScrollController,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 8,
+                  vertical: 4,
                 ),
                 child: Column(
                   children: [
@@ -1550,10 +1552,11 @@ class _HomeViewState extends State<HomeView> {
                         Expanded(
                           child: TextFormField(
                             initialValue: acc.name,
-                            style: const TextStyle(fontSize: 13),
+                            style: const TextStyle(fontSize: 12),
                             decoration: const InputDecoration(
                               labelText: 'Name',
                               isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 8),
                             ),
                             onChanged: (v) => acc.name = v,
                             enabled: isOwner,
@@ -1563,10 +1566,11 @@ class _HomeViewState extends State<HomeView> {
                         Expanded(
                           child: TextFormField(
                             initialValue: acc.lastFour,
-                            style: const TextStyle(fontSize: 13),
+                            style: const TextStyle(fontSize: 12),
                             decoration: const InputDecoration(
                               labelText: 'Last 4',
                               isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 8),
                             ),
                             onChanged: (v) => acc.lastFour = v,
                             enabled: isOwner,
@@ -1574,16 +1578,17 @@ class _HomeViewState extends State<HomeView> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
                           child: TextFormField(
                             initialValue: acc.balance.toString(),
-                            style: const TextStyle(fontSize: 13),
+                            style: const TextStyle(fontSize: 12),
                             decoration: const InputDecoration(
                               labelText: 'Initial Balance',
                               isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 8),
                             ),
                             keyboardType: TextInputType.number,
                             onChanged: (v) =>
@@ -1595,10 +1600,11 @@ class _HomeViewState extends State<HomeView> {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             value: acc.currency,
-                            style: const TextStyle(fontSize: 13),
+                            style: const TextStyle(fontSize: 12),
                             decoration: const InputDecoration(
                               labelText: 'Currency',
                               isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 0),
                             ),
                             items: ['BHD', 'PKR', 'SAR']
                                 .map(
@@ -1615,16 +1621,17 @@ class _HomeViewState extends State<HomeView> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
                           child: TextFormField(
                             initialValue: acc.conversionRate.toString(),
-                            style: const TextStyle(fontSize: 13),
+                            style: const TextStyle(fontSize: 12),
                             decoration: const InputDecoration(
                               labelText: 'Rate to BHD',
                               isDense: true,
+                              contentPadding: EdgeInsets.symmetric(vertical: 8),
                             ),
                             keyboardType: TextInputType.number,
                             onChanged: (v) =>
@@ -1635,6 +1642,7 @@ class _HomeViewState extends State<HomeView> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: ListTile(
+                            dense: true,
                             contentPadding: EdgeInsets.zero,
                             title: const Text(
                               'Color',
@@ -1642,7 +1650,7 @@ class _HomeViewState extends State<HomeView> {
                             ),
                             trailing: CircleAvatar(
                               backgroundColor: Color(acc.colorValue),
-                              radius: 12,
+                              radius: 10,
                             ),
                             onTap: () {
                               showDialog(
@@ -1679,7 +1687,7 @@ class _HomeViewState extends State<HomeView> {
           ),
           if (isOwner)
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
                 children: [
                   IconButton(
@@ -1736,22 +1744,31 @@ class _HomeViewState extends State<HomeView> {
                     icon: const Icon(
                       Icons.delete_outline,
                       color: Colors.redAccent,
-                      size: 20,
+                      size: 18,
                     ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                   ),
                   const Spacer(),
-                  ElevatedButton(
-                    onPressed: () async {
-                      String ownerId = acc.ownerId == '' ? _uid : acc.ownerId;
-                      await _db
-                          .collection('users')
-                          .doc(ownerId)
-                          .collection('accounts')
-                          .doc(acc.id)
-                          .update(acc.toJson());
-                      setState(() => _isFlipped = false);
-                    },
-                    child: const Text('Save'),
+                  SizedBox(
+                    height: 32,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        String ownerId = acc.ownerId == '' ? _uid : acc.ownerId;
+                        await _db
+                            .collection('users')
+                            .doc(ownerId)
+                            .collection('accounts')
+                            .doc(acc.id)
+                            .update(acc.toJson());
+                        setState(() => _isFlipped = false);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        textStyle: const TextStyle(fontSize: 12),
+                      ),
+                      child: const Text('Save'),
+                    ),
                   ),
                 ],
               ),
